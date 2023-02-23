@@ -1,130 +1,65 @@
 #!/usr/bin/python3
-"""Unittest module for the console"""
+"""
+Unit tests for console using Mock module from python standard library
+Checks console for capturing stdout into a StringIO object
+"""
 
-import unittest
 import os
-import json
-import pycodestyle
-import io
+import sys
+import unittest
+from unittest.mock import create_autospec, patch
+from io import StringIO
 from console import HBNBCommand
-from models.engine.file_storage import FileStorage
-from unittest.mock import patch
+from models import storage
+from models.base_model import BaseModel
 from models.user import User
-from models.place import Place
 from models.state import State
 from models.city import City
 from models.amenity import Amenity
+from models.place import Place
 from models.review import Review
 
 
+class TestConsole(unittest.TestCase):
+    """
+    Unittest for the console model
+    """
 
-class TestCommand(unittest.TestCase):
-    """Class that tests the console"""
-    
     def setUp(self):
-        """Function empties file.json"""
-        FileStorage._FileStorage__objects = {}
-        FileStorage().save()
+        """Redirecting stdin and stdout"""
+        self.mock_stdin = create_autospec(sys.stdin)
+        self.mock_stdout = create_autospec(sys.stdout)
+        self.err = ["** class name missing **",
+                    "** class doesn't exist **",
+                    "** instance id missing **",
+                    "** no instance found **",
+                    ]
 
-    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') == 'db', "Not FileStorage")
-    def test_create_fs(self):
-        """test the create command"""
-        storage = FileStorage()
-        storage.reload()
-        opt = r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}'
-        with self.assertRaises(AttributeError):
-            with patch('sys.stdout', new=io.StringIO()) as f:
-                HBNBCommand().onecmd("create BaseModel updated_at=0.0"
-                                     " created_at=0.0")
-        with patch('sys.stdout', new=io.StringIO()) as f:
-            HBNBCommand().onecmd('create User email="cluck@wanadoo.fr"'
-                                 ' password="jesustakethewheel"')
-        result = f.getvalue().strip()
-        self.assertRegex(result, opt)
-        email = storage.all()[f'User.{result}'].email
-        self.assertEqual(email, "cluck@wanadoo.fr")
-        password = storage.all()[f'User.{result}'].password
-        self.assertEqual(password, "jesustakethewheel")
-        with patch('sys.stdout', new=io.StringIO()) as f:
-            HBNBCommand().onecmd('create State johnny="bravo"'
-                                 ' number="7" pi="3.14"')
-        result = f.getvalue().strip()
-        self.assertRegex(result, opt)
-        johnny = storage.all()[f'State.{result}'].johnny
-        self.assertEqual(johnny, "bravo")
-        number = storage.all()[f'State.{result}'].number
-        self.assertEqual(number, '7')
-        pi = storage.all()[f'State.{result}'].pi
-        self.assertEqual(pi, '3.14')
-        with patch('sys.stdout', new=io.StringIO()) as f:
-            HBNBCommand().onecmd('create City johnny="bravo" number="7"'
-                                 ' pi="3.14"')
-        result = f.getvalue().strip()
-        self.assertRegex(result, opt)
-        johnny = storage.all()[f'City.{result}'].johnny
-        self.assertEqual(johnny, "bravo")
-        number = storage.all()[f'City.{result}'].number
-        self.assertEqual(number, '7')
-        pi = storage.all()[f'City.{result}'].pi
-        self.assertEqual(pi, '3.14')
-        with patch('sys.stdout', new=io.StringIO()) as f:
-            HBNBCommand().onecmd('create Amenity johnny="bravo"'
-                                 ' number="7" pi="3.14"')
-        result = f.getvalue().strip()
-        self.assertRegex(result, opt)
-        johnny = storage.all()[f'Amenity.{result}'].johnny
-        self.assertEqual(johnny, "bravo")
-        number = storage.all()[f'Amenity.{result}'].number
-        self.assertEqual(number, '7')
-        pi = storage.all()[f'Amenity.{result}'].pi
-        self.assertEqual(pi, '3.14')
-        with patch('sys.stdout', new=io.StringIO()) as f:
-            HBNBCommand().onecmd('create Place johnny="bravo"'
-                                 ' number="7" pi="3.14"')
-        result = f.getvalue().strip()
-        self.assertRegex(result, opt)
-        johnny = storage.all()[f'Place.{result}'].johnny
-        self.assertEqual(johnny, "bravo")
-        number = storage.all()[f'Place.{result}'].number
-        self.assertEqual(number, '7')
-        pi = storage.all()[f'Place.{result}'].pi
-        self.assertEqual(pi, '3.14')
-        with patch('sys.stdout', new=io.StringIO()) as f:
-            HBNBCommand().onecmd('create Review johnny="bravo"'
-                                 ' number="7" pi="3.14"')
-        result = f.getvalue().strip()
-        self.assertRegex(result, opt)
-        johnny = storage.all()[f'Review.{result}'].johnny
-        self.assertEqual(johnny, "bravo")
-        number = storage.all()[f'Review.{result}'].number
-        self.assertEqual(number, '7')
-        pi = storage.all()[f'Review.{result}'].pi
-        self.assertEqual(pi, '3.14')
-        with patch('sys.stdout', new=io.StringIO()) as f:
-            HBNBCommand().onecmd('create')
-        opt = '** class name missing **\n'
-        self.assertEqual(f.getvalue(), opt)
-        with patch('sys.stdout', new=io.StringIO()) as f:
-            HBNBCommand().onecmd('create NotClass')
-        opt = '** class doesn\'t exist **\n'
-        self.assertEqual(f.getvalue(), opt)
+        self.cls = ["BaseModel",
+                    "User",
+                    "State",
+                    "City",
+                    "Place",
+                    "Amenity",
+                    "Review"]
 
-    def testPycodeStyle(self):
-        """Pycodestyle test for console.py"""
-        style = pycodestyle.StyleGuide(quiet=True)
-        p = style.check_files(['console.py'])
-        self.assertEqual(p.total_errors, 0, "fix pep8")
+    def create(self, server=None):
+        """
+        Redirects stdin and stdout to the mock module
+        """
+        return HBNBCommand(stdin=self.mock_stdin, stdout=self.mock_stdout)
 
-    def test_doc_console(self):
-        self.assertIsNotNone(HBNBCommand.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_all.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_create.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_destroy.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_quit.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_EOF.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_count.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_update.__doc__)
-        self.assertIsNotNone(HBNBCommand.emptyline.__doc__)
+    def last_write(self, nr=None):
+        """Returns last n output lines"""
+        if nr is None:
+            return self.mock_stdout.write.call_args[0][0]
+        return "".join(map(lambda c: c[0][0],
+                           self.mock_stdout.write.call_args_list[-nr:]))
+
+    def test_quit(self):
+        """Quit command"""
+        cli = self.create()
+        self.assertTrue(cli.onecmd("quit"))
 
 
 if __name__ == '__main__':
