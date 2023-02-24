@@ -23,51 +23,60 @@ class FileStorage():
 
     __file_path = "file.json"
     __objects = {}
+#!/usr/bin/python3
+"""
+Module file_storage serializes and
+deserializes JSON types
+"""
+
+import json
+from models.base_model import BaseModel
+from models.user import User
+
+
+class FileStorage:
+    """
+    Custom class for file storage
+    """
+
+    __file_path = "file.json"
+    __objects = {}
 
     def all(self):
         """
-        returns the dictionary __objects
+        Returns dictionary representation of all objects
         """
-        return FileStorage.__objects
+        return self.__objects
 
-    def new(self, obj):
+    def new(self, object):
+        """sets in __objects the object with the key
+        <object class name>.id
+
+        Args:
+            object(obj): object to write
+
         """
-        sets in __objects the obj with key <obj class name>.id
-        """
-        key = "{}.{}".format(type(obj).__name__, obj.id)
-        FileStorage.__objects[key] = obj
+        self.__objects[object.__class__.__name__ + '.' + str(object)] = object
 
     def save(self):
         """
-        serializes __objects to the JSON file (path: __file_path)
+        serializes __objects to the JSON file
+        (path: __file_path)
         """
-        with open(FileStorage.__file_path, 'w') as f:
-            json.dump(
-                {k: v.to_dict() for k, v in FileStorage.__objects.items()}, f)
+        with open(self.__file_path, 'w+') as f:
+            json.dump({k: v.to_dict() for k, v in self.__objects.items()
+                       }, f)
 
     def reload(self):
         """
-        deserializes the JSON file to __objects only if the JSON
-        file exists; otherwise, does nothing
+        deserializes the JSON file to __objects, if the JSON
+        file exists, otherwise nothing happens)
         """
-        current_classes = {'BaseModel': BaseModel, 'User': User,
-                           'Amenity': Amenity, 'City': City, 'State': State,
-                           'Place': Place, 'Review': Review}
-
-        if not os.path.exists(FileStorage.__file_path):
-            return
-
-        with open(FileStorage.__file_path, 'r') as f:
-            deserialized = None
-
-            try:
-                deserialized = json.load(f)
-            except json.JSONDecodeError:
-                pass
-
-            if deserialized is None:
-                return
-
-            FileStorage.__objects = {
-                k: current_classes[k.split('.')[0]](**v)
-                for k, v in deserialized.items()}
+        try:
+            with open(self.__file_path, 'r') as f:
+                dict = json.loads(f.read())
+                for value in dict.values():
+                    cls = value["__class__"]
+                    self.new(eval(cls)(**value))
+        except Exception:
+            pass
