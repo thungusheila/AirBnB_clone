@@ -1,4 +1,4 @@
-#!/bin/usr/python3
+##!/bin/usr/python3
 """
 Init for models module
 """
